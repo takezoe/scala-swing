@@ -15,6 +15,10 @@ import javax.swing.{JList, JComponent, JComboBox, JTextField, ComboBoxModel, Abs
 import java.awt.event.ActionListener
 
 object ComboBox {
+  
+  type ComboBoxModel = javax.swing.ComboBoxModel[Any]
+  type AbstractListModel = javax.swing.AbstractListModel[Any]
+  
   /**
    * An editor for a combo box. Let's you edit the currently selected item.
    * It is highly recommended to use the BuiltInEditor class. For anything 
@@ -159,6 +163,9 @@ object ComboBox {
  * @see javax.swing.JComboBox
  */
 class ComboBox[A](items: Seq[A]) extends Component with Publisher {
+  
+  type JComboBox = javax.swing.JComboBox[Any]
+  
   override lazy val peer: JComboBox = new JComboBox(ComboBox.newConstantModel(items)) with SuperMixin
   
   object selection extends Publisher {
@@ -203,7 +210,7 @@ class ComboBox[A](items: Seq[A]) extends Component with Publisher {
     peer.setEditor(editor(this).comboBoxPeer)
   }
   
-  def prototypeDisplayValue: Option[A] = toOption[A](peer.getPrototypeDisplayValue)
+  def prototypeDisplayValue: Option[A] = toOption[A](peer.getPrototypeDisplayValue.asInstanceOf[Object])
   def prototypeDisplayValue_=(v: Option[A]) { 
     peer.setPrototypeDisplayValue(v map toAnyRef orNull)
   }

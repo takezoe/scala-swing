@@ -15,6 +15,9 @@ import javax.swing._
 import javax.swing.event._
 
 object ListView {
+  
+  type ListCellRenderer = javax.swing.ListCellRenderer[Any]
+  
   /**
    * The supported modes of user selections.
    */
@@ -24,7 +27,7 @@ object ListView {
     val MultiInterval = Value(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION)
   }
   
-  def wrap[A](c: JList) = new ListView[A] {
+  def wrap[A](c: JList[A]) = new ListView[A] {
     override lazy val peer = c
   }
   
@@ -70,8 +73,8 @@ object ListView {
    */
   abstract class Renderer[-A] {
     def peer: ListCellRenderer = new ListCellRenderer {
-      def getListCellRendererComponent(list: JList, a: Any, index: Int, isSelected: Boolean, focused: Boolean) = 
-        componentFor(ListView.wrap[A](list), isSelected, focused, a.asInstanceOf[A], index).peer
+      def getListCellRendererComponent(list: JList[_], a: Any, index: Int, isSelected: Boolean, focused: Boolean) = 
+        componentFor(ListView.wrap[A](list.asInstanceOf[JList[A]]), isSelected, focused, a.asInstanceOf[A], index).peer
     }
     def componentFor(list: ListView[_], isSelected: Boolean, focused: Boolean, a: A, index: Int): Component
   }
@@ -123,7 +126,7 @@ object ListView {
    * that renders the string returned from an item's <code>toString</code>.
    */
   implicit object GenericRenderer extends Renderer[Any] {
-    override lazy val peer: ListCellRenderer = new DefaultListCellRenderer
+    override lazy val peer = (new DefaultListCellRenderer).asInstanceOf[ListCellRenderer]
     def componentFor(list: ListView[_], isSelected: Boolean, focused: Boolean, a: Any, index: Int): Component = {
       val c = peer.getListCellRendererComponent(list.peer, a, index, isSelected, focused).asInstanceOf[JComponent]
       Component.wrap(c)
@@ -142,15 +145,15 @@ object ListView {
  */
 class ListView[A] extends Component {
   import ListView._
-  override lazy val peer: JList = new JList with SuperMixin
+  override lazy val peer: JList[A] = new JList[A] with SuperMixin
   
   def this(items: Seq[A]) = {
     this()
     listData = items
   }
   
-  protected class ModelWrapper(val items: Seq[A]) extends AbstractListModel {
-    def getElementAt(n: Int) = items(n).asInstanceOf[AnyRef]
+  protected class ModelWrapper(val items: Seq[A]) extends AbstractListModel[A] {
+    def getElementAt(n: Int) = items(n)
     def getSize = items.size
   }
   
@@ -168,8 +171,8 @@ class ListView[A] extends Component {
   }
   
   def listData_=(items: Seq[A]) {
-    peer.setModel(new AbstractListModel {
-      def getElementAt(n: Int) = items(n).asInstanceOf[AnyRef]
+    peer.setModel(new AbstractListModel[A] {
+      def getElementAt(n: Int) = items(n).asInstanceOf[A]
       def getSize = items.size
     })
   } 
@@ -227,7 +230,7 @@ class ListView[A] extends Component {
     def adjusting = peer.getSelectionModel.getValueIsAdjusting
   }
   
-  def renderer: ListView.Renderer[A] = ListView.Renderer.wrap(peer.getCellRenderer)
+  def renderer: ListView.Renderer[A] = ListView.Renderer.wrap(peer.getCellRenderer.asInstanceOf[ListCellRenderer])
   def renderer_=(r: ListView.Renderer[A]) { peer.setCellRenderer(r.peer) }
   
   def fixedCellWidth = peer.getFixedCellWidth
